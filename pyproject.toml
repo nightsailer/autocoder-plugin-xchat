@@ -1,0 +1,25 @@
+[project]
+name = "autocoder-plugin-xtools"
+version = "0.1.0"
+description = "A set of practical plugins for AutoCoder, designed to improve functionality and make automation tasks more efficient and flexible"
+readme = "README.md"
+authors = [
+    { name = "Pan Fan", email = "nightsailer@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "auto-coder>=0.1.310",
+    "textual>=3.0.0",
+]
+
+[project.scripts]
+autocoder-plugin-xtools = "autocoder_plugin_xtools:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
