@@ -1,195 +1,227 @@
+# 导入必要的 Textual 组件
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, VerticalScroll
-from textual.widgets import (
-    Header,
-    Footer,
-    Static,
-    Input,
-    Button,
-    Label,
-    ListItem,
-    ListView,
-)
+from textual.containers import Horizontal, Vertical, Container  # 导入 Container
+from textual.widgets import Header, Footer, Static, Input, Button, Label
 from textual.widget import Widget
-from textual.reactive import var
+from textual.reactive import reactive
+from textual.binding import Binding
+from typing import Any  # 导入 Any 用于类型提示
 
 
-# --- Custom Widget for List Items ---
-# Represents a single item in the "Suggested" list
+# --- 可复用的建议项组件 ---
 class SuggestedItem(Widget):
+    """显示建议命令的自定义小部件"""
+
     DEFAULT_CSS = """
     SuggestedItem {
         layout: horizontal;
-        height: 1;
-        width: 100%;
-        padding: 0 1; /* Padding left/right */
-        align-vertical: middle; /* Vertically center content */
+        height: auto; /* 保持 auto 以适应内容 */
+        width: 100%; /* 确保宽度充满父容器 */
+        margin-bottom: 1;
+        padding: 0 1; /* 左右内边距 */
     }
-    SuggestedItem > Static { /* Style child Statics directly */
-        border: none;
-        height: 1;
-        content-align-vertical: middle; /* Ensure text is centered vertically */
+    SuggestedItem:hover {
+        /* 尝试更明显的悬停背景色 */
+        background: #4f5261;
     }
-    SuggestedItem > .icon {
+    SuggestedItem .icon {
         width: 3;
-        content-align: center middle; /* Center icon */
-        color: $accent-lighten-1;
+        content-align: center middle;
+        color: #f1fa8c;
     }
-    SuggestedItem > .title {
-        width: 1fr; /* Take up remaining space */
+    SuggestedItem .text {
+        width: 1fr;
         padding-left: 1;
     }
-    SuggestedItem > .shortcut {
-        width: auto; /* Size based on content */
-        color: $text-muted; /* Dimmer color for shortcut */
+    SuggestedItem .shortcut {
+        width: auto;
+        color: #6272a4;
         padding-left: 1;
-        align: right middle; /* Align to the right */
     }
-
-    /* Styling when the ListItem containing this widget is highlighted */
-    ListItem.--highlight SuggestedItem > .icon {
-         color: $text;
-    }
-    ListItem.--highlight SuggestedItem > .title {
-         color: $text; /* Ensure text is readable on highlight */
-    }
-     ListItem.--highlight SuggestedItem > .shortcut {
-         color: $text;
-    }
+    /* 图标颜色类 */
+    .icon-toggle { color: #f1fa8c; }
+    .icon-create { color: #50fa7b; }
+    .icon-theme { color: #bd93f9; }
     """
+    icon = reactive(" ")
+    text = reactive(" ")
+    shortcut = reactive(" ")
 
-    def __init__(self, icon: str, title: str, shortcut: str = "", **kwargs) -> None:
+    def __init__(self, icon: str, text: str, shortcut: str, **kwargs: Any):
         super().__init__(**kwargs)
-        self.item_icon = icon
-        self.item_title = title
-        self.item_shortcut = shortcut
+        self.icon = icon
+        self.text = text
+        self.shortcut = shortcut
 
     def compose(self) -> ComposeResult:
-        yield Static(self.item_icon, classes="icon")
-        yield Static(self.item_title, classes="title")
-        if self.item_shortcut:
-            yield Static(self.item_shortcut, classes="shortcut")
+        yield Label(self.icon, classes="icon")
+        yield Label(self.text, classes="text")
+        yield Label(self.shortcut, classes="shortcut")
 
 
-# --- The Main PopupWindow Widget ---
-class PopupWindow(Container):
+# --- 可复用的命令搜索组件 ---
+class CommandSearchWidget(Container):  # 继承自 Container
+    """一个封装了命令搜索界面的可复用组件"""
+
     DEFAULT_CSS = """
-    PopupWindow {
-        /* Positioning & Sizing */
-        /* To make it appear like a popup, center it and give fixed size */
-        /* Option 1: Using grid on the parent screen */
-        /* align: center middle; */ /* Center content within the popup */
-        /* Option 2: Absolute positioning (more popup-like) - Requires parent with relative/absolute */
-        layer: popup; /* Render on a higher layer */
-        offset: 2 5;  /* Example offset from top-left */
-        width: 80;   /* Fixed width */
-        height: 25;  /* Fixed height */
-
-
-        /* Appearance */
-        background: $surface; /* Dark background */
-        border: round $accent; /* Rounded border with accent color */
-        padding: 1; /* Inner spacing */
-        /* Using grid for internal layout */
-        grid-size: 1; /* Single column grid */
-        grid-gutter: 0 1;
+    CommandSearchWidget {
+        width: 80;
+        height: auto; /* 高度自适应内容 */
+        max-height: 25; /* 增加最大高度以容纳更多内容 */
+        background: #282a36;
+        border: round #44475a;
+        padding: 1;
+        /* 使用垂直布局来管理内部元素 */
+        layout: vertical;
     }
-
-    /* Input field styling */
-    PopupWindow > Input {
+    CommandSearchWidget > Input {
+        border: tall #6272a4;
         margin-bottom: 1;
-        border: tall $accent-darken-1;
-        background: $panel-darken-1; /* Slightly different background */
+        background: #44475a;
+        height: 3; /* 固定输入框高度 */
+        /* flex-shrink: 0;  <-- 移除无效属性 */
     }
-
-    /* Container for category buttons */
-    #categories-container {
-        height: auto; /* Auto height based on content */
-        grid-size: 4; /* 4 columns for buttons */
-        grid-gutter: 1 1; /* Spacing between buttons */
+    CommandSearchWidget > Input:focus {
+        border: tall #bd93f9;
+    }
+    CommandSearchWidget #button-row-1, CommandSearchWidget #button-row-2 {
+        height: auto; /* 按钮行高度自适应 */
         margin-bottom: 1;
+        /* flex-shrink: 0;  <-- 移除无效属性 */
+    }
+    CommandSearchWidget Button {
+        border: round #6272a4;
+        background: #44475a;
+        color: #f8f8f2;
+        margin: 0 1;
+        min-width: 8;
+        height: 3;
+        content-align: center middle;
+    }
+    CommandSearchWidget Button:hover {
+        background: #6272a4;
+        border: round #bd93f9;
+    }
+    CommandSearchWidget #suggested-label {
+        color: #8be9fd;
+        margin-top: 1; /* 调整与按钮行的间距 */
+        height: 1; /* 固定标签高度 */
+        /* flex-shrink: 0;  <-- 移除无效属性 */
+    }
+    /* 为建议列表容器添加样式 */
+    CommandSearchWidget #suggestions-list-container {
+         /* 让此容器占据剩余的垂直空间 */
+        height: 1fr;
+        width: 100%;
+        /* 启用垂直滚动 */
+        overflow-y: scroll;
+        /* 可以添加背景色以区分 */
+        /* background: #2f313d; */
     }
 
-    #categories-container > Button {
-        width: 100%; /* Make buttons fill grid cells */
-        background: $panel-lighten-1; /* Lighter button background */
-        border: none;
-        /* Optional: add round borders to buttons */
-        /* border: round $primary-background; */
-    }
-    #categories-container > Button:hover {
-        background: $panel-lighten-2; /* Slightly lighter on hover */
-    }
-
-
-    /* "Suggested" label styling */
-    #suggested-label {
-        margin-top: 1;
-        margin-bottom: 1;
-        text-style: bold;
-    }
-
-    /* ListView styling */
-    PopupWindow > ListView {
-        background: $surface; /* Match popup background */
-        border: none; /* Remove default ListView border */
-    }
-
-     /* Highlight style for ListView items */
-    ListView > ListItem.--highlight {
-        background: $accent; /* Use accent color for highlight */
-    }
+    /* 按钮图标颜色类 */
+    .icon-workflow { color: #ff79c6; }
+    .icon-prompt { color: #ffb86c; }
+    .icon-notebook { color: #8be9fd; }
+    .icon-env { color: #ff5555; }
+    .icon-drive { color: #50fa7b; }
+    .icon-actions { color: #bd93f9; }
+    .icon-sessions { color: #f1fa8c; }
+    .icon-launch { color: #ffb86c; }
     """
 
     def compose(self) -> ComposeResult:
+        """创建组件的 UI 布局"""
         yield Input(placeholder="Search for a command")
-        # Container for the category buttons using a grid
-        with Container(id="categories-container"):
+        with Horizontal(id="button-row-1"):
             yield Button(
-                "workflows"
-            )  # Add icons/symbols if desired: Button(" workflows") etc.
-            yield Button("prompts")
-            yield Button("notebooks")
-            yield Button("env vars")
-            yield Button("Warp Drive")
-            yield Button("actions")
-            yield Button("sessions")
-            yield Button("launch cfgs")
-        yield Label("Suggested", id="suggested-label")
-        # Use ListView for the suggested items
-        with ListView(id="suggestions-list"):
-            # Wrap our custom SuggestedItem widget in a standard ListItem
-            yield ListItem(SuggestedItem("✨", "Toggle Agent Mode", "⌘ |"))
-            yield ListItem(
-                SuggestedItem("💲", "Create New Personal Workflow")
-            )  # No shortcut
-            yield ListItem(SuggestedItem("🎨", "Open Theme Picker", "⇧ ⌘ T"))
-            yield ListItem(SuggestedItem("⚙️", "Settings"))
-            yield ListItem(SuggestedItem("❓", "Help / Documentation"))
+                " workflows",
+                variant="default",
+                id="btn-workflows",
+                classes="icon-workflow",
+            )
+            yield Button(
+                " prompts", variant="default", id="btn-prompts", classes="icon-prompt"
+            )
+            yield Button(
+                " notebooks",
+                variant="default",
+                id="btn-notebooks",
+                classes="icon-notebook",
+            )
+            yield Button(
+                " env vars", variant="default", id="btn-env", classes="icon-env"
+            )
+        with Horizontal(id="button-row-2"):
+            yield Button(
+                " Warp Drive", variant="default", id="btn-drive", classes="icon-drive"
+            )
+            yield Button(
+                " actions", variant="default", id="btn-actions", classes="icon-actions"
+            )
+            yield Button(
+                " sessions",
+                variant="default",
+                id="btn-sessions",
+                classes="icon-sessions",
+            )
+            yield Button(
+                " launch", variant="default", id="btn-launch", classes="icon-launch"
+            )
+
+        yield Static("Suggested", id="suggested-label")
+
+        # 将 Vertical(id="suggestions-list") 放入一个容器以便应用滚动
+        with Container(id="suggestions-list-container"):
+            with Vertical(id="suggestions-list"):  # 保持这个 Vertical 用于排列项目
+                # 添加更多项目以测试滚动
+                yield SuggestedItem(
+                    "⚡",
+                    "Toggle Agent Mode",
+                    "⌘ K",
+                    id="suggest-toggle",
+                    classes="icon-toggle",
+                )
+                yield SuggestedItem(
+                    "✨",
+                    "Create a New Personal Workflow",
+                    "",
+                    id="suggest-create",
+                    classes="icon-create",
+                )
+                yield SuggestedItem(
+                    "⚙️",
+                    "Open Theme Picker",
+                    "⇧ ⌘ T",
+                    id="suggest-theme",
+                    classes="icon-theme",
+                )
+                yield SuggestedItem(
+                    "🔧", "Another Action Item", "Alt+A", id="suggest-action"
+                )
+                yield SuggestedItem("💡", "Show Help", "?", id="suggest-help")
+                yield SuggestedItem(
+                    "🚀", "Launch Something Else", "Ctrl+L", id="suggest-launch-else"
+                )
 
 
-# --- Example App to Display the Popup ---
-class PopupApp(App):
-    BINDINGS = [("escape", "quit", "Quit")]
+# --- 主应用程序 (使用新组件) ---
+class CommandSearchApp(App):
+    """使用 CommandSearchWidget 组件的 Textual 应用"""
+
     CSS = """
     Screen {
-        /* Center the popup using grid layout on the screen */
+        background: #1e1e2e;
         align: center middle;
-        /* Add some background pattern for contrast if desired */
-        /* background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQIW2NkYGD4D8QgwAhjFBCMAAsQgwAA7pQG8ISJP5YAAAAASUVORK5CYII=) repeat; */
-
     }
     """
+    BINDINGS = [Binding("ctrl+c", "quit", "Quit", show=False, priority=True)]
 
     def compose(self) -> ComposeResult:
-        # yield Header() # Optional Header
-        yield PopupWindow()  # Add our popup widget directly to the screen
-        # yield Footer() # Optional Footer
-
-    def action_quit(self) -> None:
-        self.exit()
+        """创建应用程序 UI，只包含可复用组件"""
+        yield CommandSearchWidget()
 
 
 if __name__ == "__main__":
-    app = PopupApp()
+    app = CommandSearchApp()
     app.run()

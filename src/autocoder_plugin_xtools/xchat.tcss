@@ -1,0 +1,35 @@
+Screen {
+    background: #1c1f24;
+}
+
+#main-container {
+    width: 1fr;
+    height: 1fr;
+    align: center middle;
+    
+}
+
+#commands-list {
+    width: auto;
+    height: auto;
+}
+.command-row {
+    width: auto;
+    height: 1;
+}
+
+
+#status-bar {
+    dock: bottom;
+    border: 1px solid red;
+}
+
+#command-input {
+    height: 1;
+    # padding: 1 2;
+    background: #2c313c;
+}
+
+#command-input:focus {
+    background: #2c313c;
+}
