@@ -10,6 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "auto-coder>=0.1.310",
     "textual>=3.0.0",
+    "watchdog>=3.0.0",
 ]
 
 [project.scripts]

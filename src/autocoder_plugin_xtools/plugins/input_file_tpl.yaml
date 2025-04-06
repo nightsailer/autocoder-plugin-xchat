@@ -1,0 +1,18 @@
+# common flow: chat -> coding -> apply -> review
+cmd: /chat /new # 开启新对话
+# cmd: /chat /save # 保存至全局记忆系统
+
+# cmd: /coding /apply  # 应用当前交互内容实现编码
+# cmd: /review
+# cmd: /auto
+content: |
+  对话内容
+
+# 如果需要手动指定上下文路径, 补充，否则保持不变
+context:
+  path:
+    -
+  keyword:
+    -
+# 如果准备好了, 需要运行, 注释下面行或将draft设置为false
+draft: true
