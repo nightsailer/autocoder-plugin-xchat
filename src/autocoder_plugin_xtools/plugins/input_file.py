@@ -5,38 +5,22 @@ Input file plugin for managing input file functionality
 import os
 import time
 from typing import Any, Dict, Optional, Tuple, Callable, List
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchfiles import watch, Change
+import threading
 
 from autocoder.plugins import Plugin, PluginManager
-
-
-class InputFileEventHandler(FileSystemEventHandler):
-    """Handler for input file changes"""
-
-    def __init__(self, plugin):
-        self.plugin = plugin
-        self.last_modified = 0
-
-    def on_modified(self, event):
-        if event.src_path == self.plugin.input_file_path:
-            current_time = time.time()
-            # Avoid multiple triggers for the same modification
-            if current_time - self.last_modified > 1:
-                self.last_modified = current_time
-                self.plugin.run_input_file("")
 
 
 class InputFilePlugin(Plugin):
     """Plugin for managing input file functionality"""
 
-    name = "input_file"
+    name = "xtools_input_file"
     description = "Plugin for managing input file functionality"
     version = "0.1.0"
     input_file_path = None
     input_file_name = "autocoder_input.yaml"
-    observer = None
-    event_handler = None
+    watch_thread = None
+    stop_event = None
 
     def __init__(
         self,
@@ -47,6 +31,7 @@ class InputFilePlugin(Plugin):
         """Initialize the input file plugin"""
         super().__init__(manager, config, config_path)
         self.enabled = False
+        self.last_modified = 0
 
     def initialize(self) -> bool:
         """Initialize the plugin"""
@@ -111,26 +96,56 @@ class InputFilePlugin(Plugin):
         if not os.path.exists(self.input_file_path):
             self.create_input_file()
 
+        if not os.path.exists(self.input_file_path):
+            print(f"[{self.name}] Input file creation failed: {self.input_file_path}")
+            return
+        # print the input file path to the console
+        print(f"[{self.name}] Input file path: {self.input_file_path}")
+
+        # Check if running in Cursor environment
+        is_cursor = "CURSOR_TRACE_ID" in os.environ
+        try:
+            import subprocess
+
+            if is_cursor:
+                subprocess.run(["cursor", self.input_file_path], check=False)
+                print(f"[{self.name}] Opened input file in Cursor")
+            else:
+                print(f"Please open [{self.name}] to edit the input file")
+        except Exception as e:
+            print(f"[{self.name}] Failed to open file in editor: {str(e)}")
+
         # Start watching the file
-        if self.observer is None:
-            self.event_handler = InputFileEventHandler(self)
-            self.observer = Observer()
-            self.observer.schedule(
-                self.event_handler,
-                os.path.dirname(self.input_file_path),
-                recursive=False,
-            )
-            self.observer.start()
+        if self.watch_thread is None:
+            self.stop_event = threading.Event()
+            self.watch_thread = threading.Thread(target=self._watch_loop)
+            self.watch_thread.daemon = True
+            self.watch_thread.start()
             print(f"[{self.name}] Started watching file: {self.input_file_path}")
+
+    def _watch_loop(self) -> None:
+        """Internal watch loop using watchfiles"""
+        if self.input_file_path is None:
+            return
+        for changes in watch(
+            os.path.dirname(self.input_file_path), stop_event=self.stop_event
+        ):
+            for change in changes:
+                change_type, path = change
+                if path == self.input_file_path and change_type == Change.modified:
+                    current_time = time.time()
+                    if current_time - self.last_modified > 1:
+                        self.last_modified = current_time
+                        self.run_input_file("")
 
     def stop_watching_input_file(self) -> None:
         """Stop watching the input file"""
         print(f"[{self.name}] Stopping watching input file")
-        if self.observer is not None:
-            self.observer.stop()
-            self.observer.join()
-            self.observer = None
-            self.event_handler = None
+        if self.watch_thread is not None and self.stop_event is not None:
+            self.stop_event.set()
+            self.watch_thread.join()
+            self.watch_thread = None
+            self.stop_event = None
             print(f"[{self.name}] Stopped watching file")
 
     def run_input_file(self, args: str, skip_draft: bool = True) -> None:
