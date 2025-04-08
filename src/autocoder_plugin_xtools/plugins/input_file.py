@@ -7,7 +7,7 @@ import time
 from typing import Any, Dict, Optional, Tuple, Callable, List
 from watchfiles import watch, Change
 import threading
-
+import yaml
 from autocoder.plugins import Plugin, PluginManager
 
 
@@ -123,6 +123,19 @@ class InputFilePlugin(Plugin):
             self.watch_thread.start()
             print(f"[{self.name}] Started watching file: {self.input_file_path}")
 
+    def open_in_cursor(self) -> None:
+        """Open the input file in Cursor"""
+        if self.input_file_path is None:
+            print(f"[{self.name}] No input file path configured")
+            return
+        try:
+            import subprocess
+
+            subprocess.run(["cursor", self.input_file_path], check=False)
+            print(f"[{self.name}] Opened input file in Cursor")
+        except Exception as e:
+            print(f"[{self.name}] Failed to open file in editor: {str(e)}")
+
     def _watch_loop(self) -> None:
         """Internal watch loop using watchfiles"""
         if self.input_file_path is None:
@@ -164,7 +177,35 @@ class InputFilePlugin(Plugin):
             return
 
         print(f"[{self.name}] Running input file: {self.input_file_path}")
-        # TODO: Implement file running logic here
+        # load the input file (yaml)
+        with open(self.input_file_path, "r") as f:
+            input_file = yaml.safe_load(f)
+        print(input_file)
+        # get cmd from input_file
+        cmd = input_file.get("cmd")
+        if not cmd:
+            return
+
+        print(f"Running command: {cmd}")
+
+        # get first part of cmd, split by space
+        cmd_fn_name = cmd.split(" ")[0]
+        if not cmd_fn_name:
+            return
+        # get rid of cmd as extras, subcommand and query
+        cmd_extras = cmd[len(cmd_fn_name) :]
+        cmd_fn_name = cmd_fn_name.lstrip("/")
+        if not cmd_fn_name:
+            return
+
+        # get the wrapped function
+        wrapped_fn = self.manager.get_wrapped_function(cmd_fn_name)
+        if not wrapped_fn:
+            return
+        # full query
+        full_query = cmd_extras + " " + input_file.get("content", "")
+        # run the wrapped function
+        wrapped_fn(full_query)
 
     def create_input_file(self) -> None:
         """Create the input file with template content"""

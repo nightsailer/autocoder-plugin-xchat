@@ -1,18 +1,100 @@
-# common flow: chat -> coding -> apply -> review
-cmd: /chat /new # 开启新对话
-# cmd: /chat /save # 保存至全局记忆系统
+# 手工工作流: chat -> coding -> apply -> review
+# 1.  ======方案设计阶段=====
+# 1-1 新对话从这里开始
+# cmd: /chat /new
+# 1-2 持续对话，完善方案
+#  常用模式
+# cmd: /chat
+# -- 增强：如果你配置了 RAG ，那么可以直接通过该指令向RAG提问
+# cmd: /chat /rag
+# -- 增强: 如果你配置了 mcp ，那么可以直接和mcp agent 会话
+# cmd: /chat /mcp
 
-# cmd: /coding /apply  # 应用当前交互内容实现编码
-# cmd: /review
+# 2. ====编码阶段====
+# 2.1  根据方案设计阶段的对话内容实施编码 =====
+# cmd: /coding /apply
+# content: 根据刚才我们讨论的内容完成编码
+
+# 3 =====Review====
+# 对最近一次 commit 做 reivew
+# cmd: /chat /review /commit
+# 也可以指定 commit hash:  xxxxxxx
+# cmd: /chat /learn commit=xxxxxxx
+
+# 对指定的某个文件做review, 文件引用可在 content 中书写
+#  cmd: /chat /review
+
+# ---- 其他辅助命令
+
+# 会对最近的一次commit进行反向学习,这些会自动更新到对应的 aciton yml 文件里
+# cmd: /chat /learn
+
+# 如果你想将这些知识保存到知识库,"<知识库目录路径>/文件名.txt" 可以在 content中写明要保存的路径
+# cmd: /chat /learn /save
+
+# cmd: /ask
+
+# 执行shell 命令
+# cmd: /shell ls -l
+# 自然语言自动生成 shell
+# cmd: /shell /chat 帮我查找占用 8000 端口的进程是哪个
+
+# ================万能的AGENT 模式， 如果上面的手工工作流无法满足你，就用auto好了==========
 # cmd: /auto
-content: |
-  对话内容
 
-# 如果需要手动指定上下文路径, 补充，否则保持不变
-context:
-  path:
-    -
-  keyword:
-    -
-# 如果准备好了, 需要运行, 注释下面行或将draft设置为false
+#====================这里是对话内容，作为上面命令的执行内容===============
+content: |
+  对话内容放在这里，记得运行前这段话
+
+# 如果准备好了, 需要运行, 注释下面行或将draft设置为false， 防止编辑过程中就被自动执行
 draft: true
+# ==================高级控制==================
+# 如果需要手动指定上下文路径, 补充，否则保持不变
+# context:
+#   path:
+#     -
+#   keyword:
+#     -
+
+# ========================配置指令(/conf)专用区域
+
+# =================常见的快速配置指令======
+# --- 这里有一份快速的 /conf 指令集，如果需要使用， 注释上面的cmd，打开下面的 /conf 指令，然后从后面的content列表中找到合适的配置
+# cmd: /conf
+# 关闭自动查找上下文, 此时auto-coder.chat 不会使用 r1 根据你的需求自动查找索引文件，可以节约大量时间
+# content: skip_filter_index:true
+# 关闭自动包含项目目录结构，当你项目文件很多的时候，关闭该特性可以减少输入token, 从而提升速度。
+# content: skip_filter_index:true
+# 是否对项目做索引，并且提供根据需求自动查找上下文，默认为 false。如果你对token消耗非常敏感，可以设置为 true 来关掉索引和上下文感知。此时你需要通过 /add_files 命令手动管理上下文
+# content: skip_build_index:true
+# 使用 /chat , /coding 等指令时，是否将项目的目录结构也放到上下文中,默认为true, 如果你项目很大，请设置为 false
+# content: include_project_structure:true
+# ====模型配置相关====
+# 配置一个默认的模型,这是一个必选模型
+# content: model:v3_chat
+# 配置用哪个模型来生成代码，如果没有配置，会默认使用 model 模型
+# content: code_model:v3_chat
+# 配置哪个模型来进行架构设计，项目阅读等，主要用于 /chat 指令，如果没有配置，会默认使用 model 模型
+# content: chat_model:r1_chat
+# 生成代码格式。目前支持四种类型：
+# 1. editblock
+# 2. wholefile
+# 3. diff
+# 4. strict_diff
+# 默认为 editblock。 推荐 editblock , 也可以尝试 diff, 其中 wholefile 适合大文件重构。
+# content: atuo_merge:editblock
+# 该参数对 /auto 指令有效， 当你使用 /auto 指令的时候，系统会自动将近期对项目的变更(commit) 信息给到大模型，方便大模型对用户的需求有更好的理解。 默认为 false
+# content: enable_task_history:false
+# 如果你希望 auto-coder.chat 对你的项目会越用越熟悉，那么可以开启该功能，默认为 false
+# content: enable_active_context:true
+# 对生成的代码做 lint ，如果有 lint error 自动修复，目前支持 python, reactjs, vue 三种,默认为 false.
+# 注意：当前只有 auto_merge:editblock 生效
+# content: enable_auto_fix_lint:true
+# 是否采用 agentic 模式的上下文收集。缺点是相比默认的 quick_filter 会慢很多，暂时不支持 gemini 2.5 pro, 推荐 v3-0324 或者 r1。
+# content: enable_agentic_filter:true
+# 有些情况，大模型生成的代码会合并失败， 启用从而让大模型自动修正（默认最多五次)。 该参数默认为false。当前只有 auto_merge:editblock 生效
+# content: enable_auto_fix_merge:true
+# 如果上下文过长，会触发剪枝动作。默认值为： 51200。 如果是 gemini 2.5 或者 quasar 等窗口很长的模型(code_model,chat_model,model)，可以再翻一倍
+# content: conversation_prune_safe_zone_tokens:51200
+# 索引文件很大（具体通过 index_filter_model_max_input_length） 来的判断是不是要分割处理，默认：51200 。 如果是窗口很大的的模型(index_model,model)，可以试着至少提升一倍
+# content: conversation_prune_safe_zone_tokens:51200
