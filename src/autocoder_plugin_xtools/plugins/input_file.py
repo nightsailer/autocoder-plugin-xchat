@@ -19,8 +19,7 @@ class InputFilePlugin(Plugin):
     version = "0.1.0"
     input_file_path = None
     input_file_name = "autocoder_input.yaml"
-    watch_thread = None
-    stop_event = None
+    last_modified = 0
 
     def __init__(
         self,
@@ -30,8 +29,6 @@ class InputFilePlugin(Plugin):
     ):
         """Initialize the input file plugin"""
         super().__init__(manager, config, config_path)
-        self.enabled = False
-        self.last_modified = 0
 
     def initialize(self) -> bool:
         """Initialize the plugin"""
@@ -49,8 +46,8 @@ class InputFilePlugin(Plugin):
         """Get commands provided by this plugin"""
         return {
             "xtools/inputfile/watch": (
-                self.handle_input_file,
-                "Enable or disable input file watching functionality",
+                self.watch_input_file,
+                "Start watching the input file",
             ),
             "xtools/inputfile/run": (self.run_input_file, "Run the input file"),
         }
@@ -58,37 +55,17 @@ class InputFilePlugin(Plugin):
     def get_completions(self) -> Dict[str, List[str]]:
         """Get completions provided by this plugin"""
         return {
-            "/xtools/inputfile/watch": ["on", "off"],
+            "/xtools/inputfile/watch": [],
             "/xtools/inputfile/run": [],
         }
 
-    def handle_input_file(self, args: str) -> None:
-        """Handle the input file command
+    def watch_input_file(self, args: str = "") -> None:
+        """Watch the input file
 
         Args:
-            args: Command arguments (on|off)
+            args: Command arguments (unused)
         """
-        if not args:
-            print(f"[{self.name}] Please specify 'on' or 'off'")
-            return
-
-        action = args.lower()
-        if action not in ["on", "off"]:
-            print(f"[{self.name}] Invalid argument. Please use 'on' or 'off'")
-            return
-
-        self.enabled = action == "on"
-        print(
-            f"[{self.name}] Input file functionality is now {'enabled' if self.enabled else 'disabled'}"
-        )
-        if self.enabled:
-            self.watch_input_file()
-        else:
-            self.stop_watching_input_file()
-
-    def watch_input_file(self) -> None:
-        """Watch the input file"""
-        print(f"[{self.name}] Watching input file")
+        print(f"[{self.name}] Starting input file watching")
         # if the file doesn't exist, create it
         if self.input_file_path is None:
             print(f"[{self.name}] No input file path configured")
@@ -115,13 +92,16 @@ class InputFilePlugin(Plugin):
         except Exception as e:
             print(f"[{self.name}] Failed to open file in editor: {str(e)}")
 
-        # Start watching the file
-        if self.watch_thread is None:
-            self.stop_event = threading.Event()
-            self.watch_thread = threading.Thread(target=self._watch_loop)
-            self.watch_thread.daemon = True
-            self.watch_thread.start()
-            print(f"[{self.name}] Started watching file: {self.input_file_path}")
+        # Start watching the file synchronously
+        print(f"[{self.name}] Started watching file: {self.input_file_path}")
+        for changes in watch(os.path.dirname(self.input_file_path)):
+            for change in changes:
+                change_type, path = change
+                if path == self.input_file_path and change_type == Change.modified:
+                    current_time = time.time()
+                    if current_time - self.last_modified > 1:
+                        self.last_modified = current_time
+                        self.run_input_file(skip_draft=True)
 
     def open_in_cursor(self) -> None:
         """Open the input file in Cursor"""
@@ -136,36 +116,10 @@ class InputFilePlugin(Plugin):
         except Exception as e:
             print(f"[{self.name}] Failed to open file in editor: {str(e)}")
 
-    def _watch_loop(self) -> None:
-        """Internal watch loop using watchfiles"""
-        if self.input_file_path is None:
-            return
-        for changes in watch(
-            os.path.dirname(self.input_file_path), stop_event=self.stop_event
-        ):
-            for change in changes:
-                change_type, path = change
-                if path == self.input_file_path and change_type == Change.modified:
-                    current_time = time.time()
-                    if current_time - self.last_modified > 1:
-                        self.last_modified = current_time
-                        self.run_input_file("")
-
-    def stop_watching_input_file(self) -> None:
-        """Stop watching the input file"""
-        print(f"[{self.name}] Stopping watching input file")
-        if self.watch_thread is not None and self.stop_event is not None:
-            self.stop_event.set()
-            self.watch_thread.join()
-            self.watch_thread = None
-            self.stop_event = None
-            print(f"[{self.name}] Stopped watching file")
-
-    def run_input_file(self, args: str, skip_draft: bool = True) -> None:
+    def run_input_file(self, skip_draft: bool = False) -> None:
         """Run the input file
 
         Args:
-            args: Command arguments (unused)
             skip_draft: Whether to skip draft files, default True
         """
         if self.input_file_path is None:
@@ -179,10 +133,10 @@ class InputFilePlugin(Plugin):
         print(f"[{self.name}] Running input file: {self.input_file_path}")
         # load the input file (yaml)
         with open(self.input_file_path, "r") as f:
-            input_file = yaml.safe_load(f)
-        print(input_file)
+            input_file_data = yaml.safe_load(f)
+        print(input_file_data)
         # get cmd from input_file
-        cmd = input_file.get("cmd")
+        cmd = input_file_data.get("cmd")
         if not cmd:
             return
 
@@ -203,7 +157,7 @@ class InputFilePlugin(Plugin):
         if not wrapped_fn:
             return
         # full query
-        full_query = cmd_extras + " " + input_file.get("content", "")
+        full_query = cmd_extras + " " + input_file_data.get("content", "")
         # run the wrapped function
         wrapped_fn(full_query)
 
@@ -236,11 +190,6 @@ class InputFilePlugin(Plugin):
             f"[{self.name}] Created input file at {self.input_file_path} using template"
         )
 
-    def is_enabled(self) -> bool:
-        """Check if the plugin is enabled"""
-        return self.enabled
-
     def shutdown(self) -> None:
         """Shutdown the plugin"""
         print(f"[{self.name}] Shutting down input file plugin")
-        self.stop_watching_input_file()

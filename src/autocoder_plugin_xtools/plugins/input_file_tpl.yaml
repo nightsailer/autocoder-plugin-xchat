@@ -98,3 +98,5 @@ draft: true
 # content: conversation_prune_safe_zone_tokens:51200
 # 索引文件很大（具体通过 index_filter_model_max_input_length） 来的判断是不是要分割处理，默认：51200 。 如果是窗口很大的的模型(index_model,model)，可以试着至少提升一倍
 # content: conversation_prune_safe_zone_tokens:51200
+# 开启细粒度工具的 agentic 模式，默认 false.  推荐code_model 配置成 quasar/gemini 2.5 pro 这种大窗口模型
+# content: enable_agentic_edit:true
