@@ -11,7 +11,19 @@ import yaml
 from rich import print
 from rich.panel import Panel
 from autocoder.plugins import Plugin, PluginManager
-from autocoder_plugin_xtools.plugins.utils import is_cursor_environment
+from autocoder_plugin_xtools.plugins.utils import (
+    is_cursor_environment,
+    is_vscode_environment,
+    is_jetbrains_environment,
+)
+
+from autocoder.auto_coder_runner import (
+    configure,
+    mcp,
+    manage_models,
+    gen_and_exec_shell_command,
+)
+from autocoder.events.event_manager_singleton import gengerate_event_file_path
 
 
 class InputFilePlugin(Plugin):
@@ -23,6 +35,12 @@ class InputFilePlugin(Plugin):
     input_file_path = None
     input_file_name = "autocoder_input.yaml"
     last_modified = 0
+    supported_commands: Dict[str, Callable] = {}
+    with_event_commands = [
+        "chat",
+        "coding",
+        "auto",
+    ]
 
     def __init__(
         self,
@@ -42,6 +60,15 @@ class InputFilePlugin(Plugin):
             return False
         self.input_file_path = os.path.join(
             project_root, "plugins", self.id_name(), self.input_file_name
+        )
+        self.supported_commands.update(self.manager.get_wrapped_functions())
+        self.supported_commands.update(
+            {
+                "conf": configure,
+                "auto": self.supported_commands["auto_command"],  # alias
+                "mcp": mcp,
+                "models": manage_models,
+            }
         )
         return True
 
@@ -92,6 +119,22 @@ class InputFilePlugin(Plugin):
                 print(
                     f"[{self.name}] Please open [bold yellow]{self.input_file_path}[/bold yellow] to edit"
                 )
+        elif is_vscode_environment():
+            ok = self.open_in_vscode()
+            if not ok:
+                print(
+                    f"[{self.name}] Please open [bold yellow]{self.input_file_path}[/bold yellow] to edit"
+                )
+        elif is_jetbrains_environment():
+            ok = self.open_in_jetbrains()
+            if not ok:
+                print(
+                    f"[{self.name}] Please open [bold yellow]{self.input_file_path}[/bold yellow] to edit"
+                )
+        else:
+            print(
+                f"[{self.name}] Please open [bold yellow]{self.input_file_path}[/bold yellow] to edit"
+            )
 
         # print panel with title "Watching file" and self.input_file_path
         panel = Panel(
@@ -120,6 +163,37 @@ class InputFilePlugin(Plugin):
 
             subprocess.run(["cursor", self.input_file_path], check=False)
             print(f"[{self.name}] Opened input file in Cursor")
+            return True
+        except Exception as e:
+            print(f"[{self.name}] Failed to open file in editor: {str(e)}")
+            return False
+
+    def open_in_vscode(self) -> bool:
+        """Open the input file in VSCode"""
+        if self.input_file_path is None:
+            print(f"[{self.name}] No input file path configured")
+            return False
+        try:
+            import subprocess
+
+            subprocess.run(["code", self.input_file_path], check=False)
+            print(f"[{self.name}] Opened input file in VSCode")
+            return True
+        except Exception as e:
+            print(f"[{self.name}] Failed to open file in editor: {str(e)}")
+            return False
+
+    def open_in_jetbrains(self) -> bool:
+        """Open the input file in JetBrains IDEs"""
+        if self.input_file_path is None:
+            print(f"[{self.name}] No input file path configured")
+            return False
+
+        try:
+            import subprocess
+
+            subprocess.run(["idea", self.input_file_path], check=False)
+            print(f"[{self.name}] Opened input file in JetBrains IDE")
             return True
         except Exception as e:
             print(f"[{self.name}] Failed to open file in editor: {str(e)}")
@@ -217,13 +291,15 @@ class InputFilePlugin(Plugin):
             f"[{self.name}] Created input file at {self.input_file_path} using template"
         )
 
-    def get_supported_commands(self) -> Dict[str, Callable]:
-        """Get a copy of all supported commands.
-        
-        Returns:
-            A dictionary mapping command names to their corresponding callable functions.
-        """
-        return self.supported_commands.copy()
+    def prepare_event_file(self, cmd: str) -> None:
+        """Prepare the event file for the given command"""
+        if cmd in self.with_event_commands:
+            self.create_event_file()
+
+    def create_event_file(self) -> None:
+        """Create the event file"""
+        event_file, file_id = gengerate_event_file_path()
+        configure(f"event_file:{event_file}")
 
     def shutdown(self) -> None:
         """Shutdown the plugin"""

@@ -43,8 +43,9 @@
 # cmd: /auto
 
 #====================这里是对话内容，作为上面命令的执行内容===============
-content: |
-  对话内容放在这里，记得运行前这段话
+#  content: 简短单行文本
+# content: |
+#   这里可以输入多行文本
 
 # 如果准备好了, 需要运行, 注释下面行或将draft设置为false， 防止编辑过程中就被自动执行
 draft: true
@@ -55,6 +56,19 @@ draft: true
 #     -
 #   keyword:
 #     -
+
+# =================模型服务商管理================
+# ******* OpenRouter *******
+
+#  sonnect_37
+
+# 1. add official url, 你可以替换 https://openrouter.ai 为你自己的反向代理的域名，保留 /api/v1  的 path 即可
+
+# content: /add_model name=or_sonnet37_chat base_url=https://openrouter.ai/api/v1 model_name=anthropic/claude-3.7-sonnet
+
+# 2. active it, 务必替换 <YOUR_API_KEY>  后再执行
+
+# content: /add or_sonnet_chat <YOUR_API_KEY>
 
 # ========================配置指令(/conf)专用区域
 
