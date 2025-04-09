@@ -8,7 +8,10 @@ from typing import Any, Dict, Optional, Tuple, Callable, List
 from watchfiles import watch, Change
 import threading
 import yaml
+from rich import print
+from rich.panel import Panel
 from autocoder.plugins import Plugin, PluginManager
+from autocoder_plugin_xtools.plugins.utils import is_cursor_environment
 
 
 class InputFilePlugin(Plugin):
@@ -74,26 +77,30 @@ class InputFilePlugin(Plugin):
             self.create_input_file()
 
         if not os.path.exists(self.input_file_path):
-            print(f"[{self.name}] Input file creation failed: {self.input_file_path}")
+            print(
+                f"[{self.name}] Input file creation failed: [red]{self.input_file_path}[/red]"
+            )
             return
         # print the input file path to the console
-        print(f"[{self.name}] Input file path: {self.input_file_path}")
+        print(
+            f"[{self.name}] Input file path: [bold cyan]{self.input_file_path}[/bold cyan]"
+        )
 
-        # Check if running in Cursor environment
-        is_cursor = "CURSOR_TRACE_ID" in os.environ
-        try:
-            import subprocess
+        if is_cursor_environment():
+            ok = self.open_in_cursor()
+            if not ok:
+                print(
+                    f"[{self.name}] Please open [bold yellow]{self.input_file_path}[/bold yellow] to edit"
+                )
 
-            if is_cursor:
-                subprocess.run(["cursor", self.input_file_path], check=False)
-                print(f"[{self.name}] Opened input file in Cursor")
-            else:
-                print(f"Please open [{self.name}] to edit the input file")
-        except Exception as e:
-            print(f"[{self.name}] Failed to open file in editor: {str(e)}")
+        # print panel with title "Watching file" and self.input_file_path
+        panel = Panel(
+            f"[bold green]{self.input_file_path}[/bold green]",
+            title="Watching input file, press [yellow]ctrl+c[/yellow] to stop",
+            title_align="center",
+        )
+        print(panel)
 
-        # Start watching the file synchronously
-        print(f"[{self.name}] Started watching file: {self.input_file_path}")
         for changes in watch(os.path.dirname(self.input_file_path)):
             for change in changes:
                 change_type, path = change
@@ -103,18 +110,20 @@ class InputFilePlugin(Plugin):
                         self.last_modified = current_time
                         self.run_input_file(skip_draft=True)
 
-    def open_in_cursor(self) -> None:
+    def open_in_cursor(self) -> bool:
         """Open the input file in Cursor"""
         if self.input_file_path is None:
             print(f"[{self.name}] No input file path configured")
-            return
+            return False
         try:
             import subprocess
 
             subprocess.run(["cursor", self.input_file_path], check=False)
             print(f"[{self.name}] Opened input file in Cursor")
+            return True
         except Exception as e:
             print(f"[{self.name}] Failed to open file in editor: {str(e)}")
+            return False
 
     def run_input_file(self, skip_draft: bool = False) -> None:
         """Run the input file
@@ -123,24 +132,32 @@ class InputFilePlugin(Plugin):
             skip_draft: Whether to skip draft files, default True
         """
         if self.input_file_path is None:
-            print(f"[{self.name}] No input file path configured")
+            print(f"[{self.name}] [red]No input file path configured[/red]")
             return
 
         if not os.path.exists(self.input_file_path):
-            print(f"[{self.name}] Input file does not exist: {self.input_file_path}")
+            print(
+                f"[{self.name}] [red][bold]Input file does not exist:[/bold] {self.input_file_path}[/red]"
+            )
             return
 
-        print(f"[{self.name}] Running input file: {self.input_file_path}")
         # load the input file (yaml)
         with open(self.input_file_path, "r") as f:
             input_file_data = yaml.safe_load(f)
-        print(input_file_data)
+
+        is_draft = input_file_data.get("draft", False)
+        if is_draft and skip_draft:
+            print(
+                f"[{self.name}] [yellow][bold]Skipping draft:[/bold] {self.input_file_path}[/yellow]"
+            )
+            return
         # get cmd from input_file
         cmd = input_file_data.get("cmd")
         if not cmd:
+            print(
+                f"[{self.name}] [red][bold]No command found in input file[/bold][/red]"
+            )
             return
-
-        print(f"Running command: {cmd}")
 
         # get first part of cmd, split by space
         cmd_fn_name = cmd.split(" ")[0]
@@ -151,14 +168,24 @@ class InputFilePlugin(Plugin):
         cmd_fn_name = cmd_fn_name.lstrip("/")
         if not cmd_fn_name:
             return
-
         # get the wrapped function
         wrapped_fn = self.manager.get_wrapped_function(cmd_fn_name)
         if not wrapped_fn:
+            print(
+                f"[{self.name}] [red][bold]Command not found:[/bold] {cmd_fn_name}[/red]"
+            )
             return
         # full query
         full_query = cmd_extras + " " + input_file_data.get("content", "")
         # run the wrapped function
+        # print panel with title "Running command" and full_query
+
+        panel = Panel(
+            f"Running command: [cyan]{full_query}[/cyan]",
+            title="Running command",
+            title_align="center",
+        )
+        print(panel)
         wrapped_fn(full_query)
 
     def create_input_file(self) -> None:
