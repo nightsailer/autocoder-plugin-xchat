@@ -217,6 +217,14 @@ class InputFilePlugin(Plugin):
             f"[{self.name}] Created input file at {self.input_file_path} using template"
         )
 
+    def get_supported_commands(self) -> Dict[str, Callable]:
+        """Get a copy of all supported commands.
+        
+        Returns:
+            A dictionary mapping command names to their corresponding callable functions.
+        """
+        return self.supported_commands.copy()
+
     def shutdown(self) -> None:
         """Shutdown the plugin"""
         print(f"[{self.name}] Shutting down input file plugin")
