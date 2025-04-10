@@ -1,3 +1,7 @@
+---
+work: 设计和计划
+cmd: /chat
+# cmd: /ask
 # 手工工作流: chat -> coding -> apply -> review
 # 1.  ======方案设计阶段=====
 # 1-1 新对话从这里开始
@@ -47,8 +51,8 @@
 # content: |
 #   这里可以输入多行文本
 
-# 如果准备好了, 需要运行, 注释下面行或将draft设置为false， 防止编辑过程中就被自动执行
-draft: true
+# 如果准备好了, 需要运行, 取消下一行注释
+# play: true
 # ==================高级控制==================
 # 如果需要手动指定上下文路径, 补充，否则保持不变
 # context:
@@ -57,60 +61,93 @@ draft: true
 #   keyword:
 #     -
 
+---
+work: 编码工作区
+# play: true
+---
+work: Review工作区
+
+# play: true
+---
 # =================模型服务商管理================
-# ******* OpenRouter *******
+book: 批量添加模型
+# play: true
+#  按照服务商批量添加并激活模型
+cmd: /add_models_by_provider
+# =========OpenRouter
+content: |
+  access_key: <INPUT_YOUR_KEY>
+  provider_name: openrouter
+  api_endpoint_url: https://openrouter.ai/api/v1
+  models:
+    - model: openrouter/quasar-alpha
+      name: quasar
 
-#  sonnect_37
+---
+# 批量设置 autocoder 使用的模型
+book: 设置AutoCoder使用模型
+# play: true
+cmd: /batch_set_models
+content: |
+  # 配置一个默认的模型,这是一个必选模型, 当其他模型没有的时候使用这个值
+  model:
+  # 配置用哪个模型来生成代码，如果没有配置，会默认使用 model 模型
+  code_model:
+  # 配置哪个模型来进行架构设计，项目阅读等，主要用于 /chat 指令
+  chat_model:
+  # 配置哪个模型来进行来做上下文感知
+  index_filter_model:
+  # 如果你把 generate_times_same_model 设置为 > 1 那么，需要有一个对多个代码做排序的模型
+  generate_rerank_model:
+  # 嵌入模型
+  emb_model:
+  # 提交信息生成模型名称
+  commit_model:
+  #------- 以下不常用可跳过-----
+  # 视觉语言模型名称
+  vl_model:
+  # 设计模型名称
+  designer_model:
+  # 语音转文本模型名称
+  voice2text_model:
+  # 稳定扩散模型名称
+  sd_model:
 
-# 1. add official url, 你可以替换 https://openrouter.ai 为你自己的反向代理的域名，保留 /api/v1  的 path 即可
-
-# content: /add_model name=or_sonnet37_chat base_url=https://openrouter.ai/api/v1 model_name=anthropic/claude-3.7-sonnet
-
-# 2. active it, 务必替换 <YOUR_API_KEY>  后再执行
-
-# content: /add or_sonnet_chat <YOUR_API_KEY>
-
-# ========================配置指令(/conf)专用区域
-
-# =================常见的快速配置指令======
-# --- 这里有一份快速的 /conf 指令集，如果需要使用， 注释上面的cmd，打开下面的 /conf 指令，然后从后面的content列表中找到合适的配置
-# cmd: /conf
-# 关闭自动查找上下文, 此时auto-coder.chat 不会使用 r1 根据你的需求自动查找索引文件，可以节约大量时间
-# content: skip_filter_index:true
-# 关闭自动包含项目目录结构，当你项目文件很多的时候，关闭该特性可以减少输入token, 从而提升速度。
-# content: skip_filter_index:true
-# 是否对项目做索引，并且提供根据需求自动查找上下文，默认为 false。如果你对token消耗非常敏感，可以设置为 true 来关掉索引和上下文感知。此时你需要通过 /add_files 命令手动管理上下文
-# content: skip_build_index:true
-# 使用 /chat , /coding 等指令时，是否将项目的目录结构也放到上下文中,默认为true, 如果你项目很大，请设置为 false
-# content: include_project_structure:true
-# ====模型配置相关====
-# 配置一个默认的模型,这是一个必选模型
-# content: model:v3_chat
-# 配置用哪个模型来生成代码，如果没有配置，会默认使用 model 模型
-# content: code_model:v3_chat
-# 配置哪个模型来进行架构设计，项目阅读等，主要用于 /chat 指令，如果没有配置，会默认使用 model 模型
-# content: chat_model:r1_chat
-# 生成代码格式。目前支持四种类型：
-# 1. editblock
-# 2. wholefile
-# 3. diff
-# 4. strict_diff
-# 默认为 editblock。 推荐 editblock , 也可以尝试 diff, 其中 wholefile 适合大文件重构。
-# content: atuo_merge:editblock
-# 该参数对 /auto 指令有效， 当你使用 /auto 指令的时候，系统会自动将近期对项目的变更(commit) 信息给到大模型，方便大模型对用户的需求有更好的理解。 默认为 false
-# content: enable_task_history:false
-# 如果你希望 auto-coder.chat 对你的项目会越用越熟悉，那么可以开启该功能，默认为 false
-# content: enable_active_context:true
-# 对生成的代码做 lint ，如果有 lint error 自动修复，目前支持 python, reactjs, vue 三种,默认为 false.
-# 注意：当前只有 auto_merge:editblock 生效
-# content: enable_auto_fix_lint:true
-# 是否采用 agentic 模式的上下文收集。缺点是相比默认的 quick_filter 会慢很多，暂时不支持 gemini 2.5 pro, 推荐 v3-0324 或者 r1。
-# content: enable_agentic_filter:true
-# 有些情况，大模型生成的代码会合并失败， 启用从而让大模型自动修正（默认最多五次)。 该参数默认为false。当前只有 auto_merge:editblock 生效
-# content: enable_auto_fix_merge:true
-# 如果上下文过长，会触发剪枝动作。默认值为： 51200。 如果是 gemini 2.5 或者 quasar 等窗口很长的模型(code_model,chat_model,model)，可以再翻一倍
-# content: conversation_prune_safe_zone_tokens:51200
-# 索引文件很大（具体通过 index_filter_model_max_input_length） 来的判断是不是要分割处理，默认：51200 。 如果是窗口很大的的模型(index_model,model)，可以试着至少提升一倍
-# content: conversation_prune_safe_zone_tokens:51200
-# 开启细粒度工具的 agentic 模式，默认 false.  推荐code_model 配置成 quasar/gemini 2.5 pro 这种大窗口模型
-# content: enable_agentic_edit:true
+---
+# ========================配置指令专用区域
+book: 配置指令
+run: false
+cmd: /batch_conf
+content: |
+  # 关闭自动查找上下文, 此时auto-coder.chat 不会使用 r1 根据你的需求自动查找索引文件，可以节约大量时间
+  skip_filter_index: true
+  # 关闭自动包含项目目录结构，当你项目文件很多的时候，关闭该特性可以减少输入token, 从而提升速度。
+  skip_filter_index: true
+  # 是否对项目做索引，并且提供根据需求自动查找上下文，默认为 false。如果你对token消耗非常敏感，可以设置为 true 来关掉索引和上下文感知。此时你需要通过 /add_files 命令手动管理上下文
+  skip_build_index: true
+  # 使用 /chat , /coding 等指令时，是否将项目的目录结构也放到上下文中,默认为true, 如果你项目很大，请设置为 false
+  include_project_structure:true
+  # 生成代码格式。目前支持四种类型：
+  # 1. editblock
+  # 2. wholefile
+  # 3. diff
+  # 4. strict_diff
+  # 默认为 editblock。 推荐 editblock , 也可以尝试 diff, 其中 wholefile 适合大文件重构。
+  atuo_merge:editblock
+  # 该参数对 /auto 指令有效， 当你使用 /auto 指令的时候，系统会自动将近期对项目的变更(commit) 信息给到大模型，方便大模型对用户的需求有更好的理解。 默认为 false
+  enable_task_history: false
+  # 如果你希望 auto-coder.chat 对你的项目会越用越熟悉，那么可以开启该功能，默认为 false
+  enable_active_context: true
+  # 对生成的代码做 lint ，如果有 lint error 自动修复，目前支持 python, reactjs, vue 三种,默认为 false.
+  # 注意：当前只有 auto_merge:editblock 生效
+  enable_auto_fix_lint: true
+  # 是否采用 agentic 模式的上下文收集。缺点是相比默认的 quick_filter 会慢很多，暂时不支持 gemini 2.5 pro, 推荐 v3-0324 或者 r1。
+  enable_agentic_filter: true
+  # 有些情况，大模型生成的代码会合并失败， 启用从而让大模型自动修正（默认最多五次)。 该参数默认为false。当前只有 auto_merge:editblock 生效
+  enable_auto_fix_merge:true
+  # 如果上下文过长，会触发剪枝动作。默认值为： 51200。 如果是 gemini 2.5 或者 quasar 等窗口很长的模型(code_model,chat_model,model)，可以再翻一倍
+  conversation_prune_safe_zone_tokens:51200
+  # 索引文件很大（具体通过 index_filter_model_max_input_length） 来的判断是不是要分割处理，默认：51200 。 如果是窗口很大的的模型(index_model,model)，可以试着至少提升一倍
+  conversation_prune_safe_zone_tokens:51200
+  # 开启细粒度工具的 agentic 模式，默认 false.  推荐code_model 配置成 quasar/gemini 2.5 pro 这种大窗口模型
+  enable_agentic_edit:true

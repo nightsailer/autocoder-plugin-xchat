@@ -68,6 +68,7 @@ class InputFilePlugin(Plugin):
                 "auto": self.supported_commands["auto_command"],  # alias
                 "mcp": mcp,
                 "models": manage_models,
+                "add_models_by_provider": self.add_models_by_provider,
             }
         )
         return True
@@ -300,6 +301,52 @@ class InputFilePlugin(Plugin):
         """Create the event file"""
         event_file, file_id = gengerate_event_file_path()
         configure(f"event_file:{event_file}")
+
+    def add_models_by_provider(self, args: str) -> None:
+        """Add models by provider"""
+        # yaml from args
+        yaml_data = yaml.safe_load(args)
+        provider_name = yaml_data.get("provider_name")
+        api_key = yaml_data.get("access_key")
+        api_endpoint_url = yaml_data.get("api_endpoint_url")
+        models = yaml_data.get("models")
+        if not provider_name:
+            print(
+                f"[{self.name}] [red][bold]Missing provider name:[/bold] {args}[/red]"
+            )
+            return
+        if not api_key or api_key == "<INPUT_YOUR_KEY>":
+            print(f"[{self.name}] [red][bold]Missing API key:[/bold] {args}[/red]")
+            return
+        if not api_endpoint_url:
+            print(
+                f"[{self.name}] [red][bold]Missing API endpoint URL:[/bold] {args}[/red]"
+            )
+            return
+        if not models:
+            print(f"[{self.name}] [red][bold]Missing models:[/bold] {args}[/red]")
+            return
+        # print panel with title "Adding models by provider" and provider_name
+        panel = Panel(
+            f"Adding models by provider: [cyan]{provider_name}[/cyan]",
+            title="Adding models by provider",
+            title_align="center",
+        )
+        print(panel)
+        # add models
+        for model in models:
+            print(f"[{self.name}] Adding model: {model}")
+            model_id = f"{provider_name}_{model['name']}"
+            add_model_query = f"/add_model name={model_id} model_name={model['model']} api_key={api_key} base_url={api_endpoint_url}"
+            add_query = f"/add {model_id} {api_key}"
+            try:
+                manage_models(add_model_query)
+                manage_models(add_query)
+                print(
+                    f"[{self.name}] [green][bold]Added model:[/bold] {model_id}[/green]"
+                )
+            except Exception as e:
+                print(f"[{self.name}] [red][bold]Failed to add model:[/bold] {e}[/red]")
 
     def shutdown(self) -> None:
         """Shutdown the plugin"""
