@@ -1,5 +1,5 @@
 ---
-work: 设计和计划
+task: 设计和计划
 cmd: /chat
 # cmd: /ask
 # 手工工作流: chat -> coding -> apply -> review
