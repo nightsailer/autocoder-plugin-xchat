@@ -11,6 +11,7 @@ dependencies = [
     "auto-coder>=0.1.310",
     "textual>=3.0.0",
     "watchfiles>=0.10.0",
+    "ruamel.yaml>=0.18.10",
 ]
 
 [project.scripts]
