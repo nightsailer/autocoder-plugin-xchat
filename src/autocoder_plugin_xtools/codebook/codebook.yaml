@@ -1,0 +1,166 @@
+---
+# Codebook configuration
+# This is the first document that defines the codebook settings
+
+# Codebook metadata
+metadata:
+  name: "AutoCoder Codebook" # Codebook name
+  version: "1.0.0" # Codebook version
+  description: "AutoCoder task definitions and configurations" # Codebook description
+  created_at: null # Creation timestamp
+  updated_at: null # Last update timestamp
+
+# Default model configuration for all tasks
+models:
+  model: "gpt-4" # Default model for general tasks
+  chat_model: "gpt-4" # Model for chat tasks (architecture design, project reading)
+  code_model: "gpt-4" # Model for code generation
+  index_filter_model: "" # Model for context awareness
+  generate_rerank_model: "" # Model for code ranking when generate_times_same_model > 1
+  emb_model: "" # Embedding model
+  commit_model: "" # Model for commit message generation
+  vl_model: "" # Visual language model
+  designer_model: "" # Design model
+  voice2text_model: "" # Speech to text model
+  sd_model: "" # Stable diffusion model
+
+# Default settings configuration for all tasks
+settings:
+  # Context filtering and indexing
+  skip_filter_index: false # Disable automatic context search
+  skip_build_index: false # Disable project indexing
+  include_project_structure: true # Include project directory structure in context
+
+  # Context processing
+  conversation_prune_safe_zone_tokens: 51200 # Token limit for context pruning
+  index_filter_model_max_input_length: 51200 # Token limit for index processing
+
+  # Code generation and merging
+  auto_merge: "editblock" # Code generation format: editblock, wholefile, diff, strict_diff
+  enable_auto_fix_lint: false # Enable automatic lint fixing
+  enable_auto_fix_merge: false # Enable automatic merge fixing
+  generate_times_same_model: 1 # Number of times to generate with same model
+
+  # Advanced features
+  enable_task_history: false # Enable task history for /auto command
+  enable_active_context: false # Enable active context learning
+  enable_agentic_filter: false # Enable agentic context collection
+  enable_agentic_edit: false # Enable agentic edit mode
+
+  # Result tracking
+  track_tokens: true # Whether to track token usage
+  track_cost: true # Whether to track cost
+  track_tools: true # Whether to track tool calls
+  track_mcp: true # Whether to track MCP calls
+
+# Default context configuration for all tasks
+context:
+  # File scope configuration, list of file patterns to include
+  files:
+    # - <file path>
+  lib:
+    # -
+  docs:
+    # extra docs
+    # -
+
+# Runtime environment configuration
+env:
+  in_cursor: true # Running in Cursor IDE
+  in_jetbrains: false # Running in JetBrains IDE
+  in_code: false # Running in VS Code
+  in_windsurf: false # Running in WindSurf
+
+# Runtime status tracking
+status:
+  # Execution control
+  run: false # Whether to execute immediately
+  parallel: false # Whether to run tasks in parallel
+  max_parallel: 1 # Maximum number of parallel tasks
+
+  # Progress tracking
+  current_task: null # Current executing task
+  completed_tasks: [] # List of completed tasks
+  failed_tasks: [] # List of failed tasks
+
+  # Resource monitoring
+  start_time: null # Start timestamp
+  end_time: null # End timestamp
+  memory_usage: null # Current memory usage
+  cpu_usage: null # Current CPU usage
+
+  # Error handling
+  stop_on_error: true # Whether to stop on error
+  retry_count: 0 # Number of retries for failed tasks
+  error_threshold: 3 # Maximum number of errors before stopping
+
+---
+# Task 1: Project Analysis
+# This is an example task document
+
+task: "设计和计划" # Task description
+cmd: chat # Command to execute
+priority: 1 # Task priority
+
+# Task content and references
+content: |
+  # Command query or instructions
+  分析当前项目的结构
+
+# Model configuration for this task
+models:
+  model: "gpt-4" # Override default model
+  max_tokens: 2000 # Override default max tokens
+
+# References for this task
+# Format (two valid styles):
+# 1. Without quotes (must start with /):
+#    /@ - File reference
+#    /@@ - Symbol reference
+#    /@task@ - Historical task reference
+# 2. With quotes (can start with @):
+#    "@" - File reference
+#    "@@" - Symbol reference
+#    "@task@" - Historical task reference
+refs:
+  - /@src/main.py # File reference
+  - /@src/utils.py # File reference
+  - /@@UserModel # Symbol reference
+  - /@@Database # Symbol reference
+  - /@task@123 # Historical task reference
+
+---
+# Task 2: User Authentication
+# Another example task document
+
+task: "实现用户登录功能"
+cmd: code
+priority: 2
+
+# Task content and references
+content: |
+  实现一个基于JWT的用户登录API
+  要求：
+  1. 使用FastAPI框架
+  2. 支持用户名密码登录
+  3. 返回JWT token
+
+# Model configuration for this task
+models:
+  model: "gpt-4"
+  max_tokens: 2000
+
+# References for this task
+# Format (two valid styles):
+# 1. Without quotes (must start with /):
+#    /@ - File reference
+#    /@@ - Symbol reference
+#    /@task@ - Historical task reference
+# 2. With quotes (can start with @):
+#    "@" - File reference
+#    "@@" - Symbol reference
+#    "@task@" - Historical task reference
+refs:
+  - /@src/api/auth.py # File reference
+  - /@@UserModel # Symbol reference
+  - /@task@123 # Historical task reference

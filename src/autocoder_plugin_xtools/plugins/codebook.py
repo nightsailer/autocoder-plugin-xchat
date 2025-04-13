@@ -7,12 +7,14 @@ from typing import Any, Dict, Optional, Tuple, Callable, List
 import yaml
 from rich import print
 from rich.panel import Panel
+from williamtoolbox.server.apps.annotation_router import executor
+
 from autocoder.plugins import Plugin, PluginManager
 from autocoder_plugin_xtools.codebook import (
-    CodeBookParser,
-    CodeBookRunner,
-    CodeBookWatcher,
-    CodeBookEditor,
+    CodebookParser,
+    CodebookWatcher,
+    CodebookEditor,
+    CodebookExecutor,
 )
 from autocoder.auto_coder_runner import (
     configure,
@@ -39,10 +41,10 @@ class CodeBookPlugin(Plugin):
     ]
 
     def __init__(
-        self,
-        manager: PluginManager,
-        config: Optional[Dict[str, Any]] = None,
-        config_path: Optional[str] = None,
+            self,
+            manager: PluginManager,
+            config: Optional[Dict[str, Any]] = None,
+            config_path: Optional[str] = None,
     ):
         """Initialize the input file plugin"""
         super().__init__(manager, config, config_path)
@@ -108,20 +110,20 @@ class CodeBookPlugin(Plugin):
             return
 
         # Open in editor
-        editor = CodeBookEditor(self.input_file_path)
+        editor = CodebookEditor(self.input_file_path)
         if not editor.open():
             print(
                 f"[{self.name}] Please open [bold yellow]{self.input_file_path}[/bold yellow] to edit"
             )
 
         # Start watching
-        watcher = CodeBookWatcher(
+        watcher = CodebookWatcher(
             self.input_file_path, lambda: self.run_codebook(skip_draft=True)
         )
         watcher.start()
 
     def run_codebook(
-        self, skip_draft: bool = False, codebook_path: Optional[str] = None
+            self, skip_draft: bool = False, codebook_path: Optional[str] = None
     ) -> None:
         """Run the codebook
 
@@ -136,7 +138,7 @@ class CodeBookPlugin(Plugin):
             return
 
         # Parse codebook
-        parser = CodeBookParser(codebook_path)
+        parser = CodebookParser(codebook_path)
         success, data, error = parser.parse()
         if not success:
             print(f"[{self.name}] [red]{error}[/red]")
@@ -159,8 +161,8 @@ class CodeBookPlugin(Plugin):
         content = parser.get_content(data)
 
         # Run command
-        runner = CodeBookRunner(self.supported_commands)
-        runner.run(cmd, content)
+        executor = CodebookExecutor(self.supported_commands)
+        executor.run(cmd, content)
 
     def create_codebook(self, codebook_path: Optional[str] = None) -> None:
         """Create the codebook with template content"""

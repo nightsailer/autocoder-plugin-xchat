@@ -1,17 +1,18 @@
 """
-CodeBook runner module for executing codebook commands
+CodeBook executor module for executing codebook commands
 """
 
 from typing import Dict, Any, Optional, Callable
 from rich import print
 from rich.panel import Panel
+from pydantic import BaseModel
 
 
-class CodeBookRunner:
-    """Runner for executing codebook commands"""
+class CodebookExecutor:
+    """Executor for executing codebook commands"""
 
     def __init__(self, command_registry: Dict[str, Callable]):
-        """Initialize the runner with a command registry
+        """Initialize the executor with a command registry
 
         Args:
             command_registry: Dictionary mapping command names to functions

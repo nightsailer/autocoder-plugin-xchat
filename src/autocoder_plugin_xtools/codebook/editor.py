@@ -12,7 +12,7 @@ from autocoder_plugin_xtools.plugins.utils import (
 )
 
 
-class CodeBookEditor:
+class CodebookEditor:
     """Editor integration for codebook files"""
 
     def __init__(self, file_path: str):

@@ -7,7 +7,7 @@ import yaml
 from typing import Dict, Any, Optional, Tuple
 
 
-class CodeBookParser:
+class CodebookParser:
     """Parser for codebook files"""
 
     def __init__(self, file_path: str):

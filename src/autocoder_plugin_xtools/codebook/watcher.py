@@ -10,7 +10,7 @@ from rich import print
 from rich.panel import Panel
 
 
-class CodeBookWatcher:
+class CodebookWatcher:
     """Watcher for monitoring codebook changes"""
 
     def __init__(self, file_path: str, on_change: Callable[[], None]):
