@@ -95,6 +95,81 @@ status:
   error_threshold: 3 # Maximum number of errors before stopping
 
 ---
+# Playground: Quick Start Examples
+# These are scratch tasks for quick start and learning
+
+---
+# Template: Hello World
+task: "Playground: Hello World"
+cmd: code
+priority: 0
+scratch: true
+
+content: |
+  打印 "Hello, World!"
+
+models:
+  model: "gpt-3.5-turbo"
+  max_tokens: 100
+
+refs: []
+
+---
+# Template: API Endpoint
+task: "Playground: REST API"
+cmd: code
+priority: 0
+scratch: true
+
+content: |
+  创建一个简单的 REST API 端点
+  要求：
+  1. 使用 FastAPI
+  2. 返回 JSON 响应
+
+models:
+  model: "gpt-4"
+  max_tokens: 500
+
+refs: []
+
+---
+# Template: Database Query
+task: "Playground: Database Query"
+cmd: code
+priority: 0
+scratch: true
+
+content: |
+  编写一个数据库查询
+  要求：
+  1. 使用 SQLAlchemy
+  2. 查询用户表
+
+models:
+  model: "gpt-4"
+  max_tokens: 500
+
+refs: []
+
+---
+# Scratch: Quick Experiment
+task: "Playground: Scratch"
+cmd: code
+priority: 0
+scratch: true
+
+content: |
+  # 在这里编写您的实验代码
+  # 这是一个临时实验区，可以快速测试想法
+
+models:
+  model: "gpt-4"
+  max_tokens: 1000
+
+refs: []
+
+---
 # Task 1: Project Analysis
 # This is an example task document
 
