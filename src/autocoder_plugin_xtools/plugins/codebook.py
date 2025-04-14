@@ -12,9 +12,6 @@ from williamtoolbox.server.apps.annotation_router import executor
 from autocoder.plugins import Plugin, PluginManager
 from autocoder_plugin_xtools.codebook import (
     CodebookParser,
-    CodebookWatcher,
-    CodebookEditor,
-    CodebookExecutor,
 )
 from autocoder.auto_coder_runner import (
     configure,
@@ -25,15 +22,12 @@ from autocoder.auto_coder_runner import (
 from autocoder.events.event_manager_singleton import gengerate_event_file_path
 
 
-class CodeBookPlugin(Plugin):
-    """Plugin for managing code book functionality"""
+class XtoolsPlugin(Plugin):
+    """Plugin for Xtools"""
 
-    name = "xtools_codebook"
-    description = "Plugin for managing code book functionality"
+    name = "xtools"
+    description = "Plugin for Xtools"
     version = "0.1.0"
-    input_file_path = None
-    input_file_name = "codebook.yaml"
-    book_tpl_path = os.path.join(os.path.dirname(__file__), "codebook_tpl.yaml")
     with_event_commands = [
         "chat",
         "coding",
@@ -41,10 +35,10 @@ class CodeBookPlugin(Plugin):
     ]
 
     def __init__(
-            self,
-            manager: PluginManager,
-            config: Optional[Dict[str, Any]] = None,
-            config_path: Optional[str] = None,
+        self,
+        manager: PluginManager,
+        config: Optional[Dict[str, Any]] = None,
+        config_path: Optional[str] = None,
     ):
         """Initialize the input file plugin"""
         super().__init__(manager, config, config_path)
@@ -56,9 +50,6 @@ class CodeBookPlugin(Plugin):
         if not project_root:
             print(f"[{self.name}] No project root found")
             return False
-        self.input_file_path = os.path.join(
-            project_root, "plugins", self.id_name(), self.input_file_name
-        )
         self.supported_commands = self.manager.get_wrapped_functions()
         self.supported_commands.update(
             {
@@ -74,124 +65,21 @@ class CodeBookPlugin(Plugin):
     def get_commands(self) -> Dict[str, Tuple[Callable, str]]:
         """Get commands provided by this plugin"""
         return {
-            "xtools/codebook/watch": (
-                self.watch_codebook,
-                "Start watching the codebook",
+            "xtools": (
+                self.start_xtools,
+                "Start xtools",
             ),
-            "xtools/codebook/run": (self.run_codebook, "Run the codebook"),
         }
 
     def get_completions(self) -> Dict[str, List[str]]:
         """Get completions provided by this plugin"""
         return {
-            "/xtools/codebook/watch": [],
-            "/xtools/codebook/run": [],
+            "/xtools": [],
         }
 
-    def watch_codebook(self, args: str = "") -> None:
-        """Watch the codebook
-
-        Args:
-            args: Command arguments (unused)
-        """
-        print(f"[{self.name}] Starting codebook watching")
-
-        if self.input_file_path is None:
-            print(f"[{self.name}] No codebook path configured")
-            return
-
-        if not os.path.exists(self.input_file_path):
-            self.create_codebook()
-
-        if not os.path.exists(self.input_file_path):
-            print(
-                f"[{self.name}] Codebook creation failed: [red]{self.input_file_path}[/red]"
-            )
-            return
-
-        # Open in editor
-        editor = CodebookEditor(self.input_file_path)
-        if not editor.open():
-            print(
-                f"[{self.name}] Please open [bold yellow]{self.input_file_path}[/bold yellow] to edit"
-            )
-
-        # Start watching
-        watcher = CodebookWatcher(
-            self.input_file_path, lambda: self.run_codebook(skip_draft=True)
-        )
-        watcher.start()
-
-    def run_codebook(
-            self, skip_draft: bool = False, codebook_path: Optional[str] = None
-    ) -> None:
-        """Run the codebook
-
-        Args:
-            skip_draft: Whether to skip draft files, default True
-            codebook_path: Optional path to codebook file
-        """
-        if codebook_path is None:
-            codebook_path = self.input_file_path
-        if codebook_path is None:
-            print(f"[{self.name}] [red]No codebook path configured[/red]")
-            return
-
-        # Parse codebook
-        parser = CodebookParser(codebook_path)
-        success, data, error = parser.parse()
-        if not success:
-            print(f"[{self.name}] [red]{error}[/red]")
-            return
-
-        # Check if draft
-        if parser.is_draft(data) and skip_draft:
-            print(
-                f"[{self.name}] [yellow][bold]Skipping draft:[/bold] {codebook_path}[/yellow]"
-            )
-            return
-
-        # Get command
-        success, cmd, error = parser.get_command(data)
-        if not success:
-            print(f"[{self.name}] [red]{error}[/red]")
-            return
-
-        # Get content
-        content = parser.get_content(data)
-
-        # Run command
-        executor = CodebookExecutor(self.supported_commands)
-        executor.run(cmd, content)
-
-    def create_codebook(self, codebook_path: Optional[str] = None) -> None:
-        """Create the codebook with template content"""
-        if codebook_path is None:
-            codebook_path = self.input_file_path
-        if codebook_path is None:
-            return
-
-        if os.path.exists(codebook_path):
-            print(f"[{self.name}] Codebook already exists: {codebook_path}")
-            return
-
-        # Get template file path
-        template_path = self.book_tpl_path
-        if not os.path.exists(template_path):
-            print(f"[{self.name}] Template file not found: {template_path}")
-            return
-
-        # Create directory if not exists
-        os.makedirs(os.path.dirname(codebook_path), exist_ok=True)
-
-        # Copy template content to input file
-        with open(template_path, "r") as template_file:
-            template_content = template_file.read()
-
-        with open(codebook_path, "w") as f:
-            f.write(template_content)
-
-        print(f"[{self.name}] Created codebook at {codebook_path} using template")
+    def start_xtools(self, args: str) -> None:
+        """Start xtools"""
+        print(f"[{self.name}] Starting xtools")
 
     def prepare_event_file(self, cmd: str) -> None:
         """Prepare the event file for the given command"""

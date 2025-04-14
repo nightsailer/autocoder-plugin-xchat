@@ -11,6 +11,8 @@ from autocoder_plugin_xtools.plugins.utils import (
     is_jetbrains_environment,
 )
 
+book_tpl_path = os.path.join(os.path.dirname(__file__), "codebook.yaml")
+
 
 class CodebookEditor:
     """Editor integration for codebook files"""
@@ -42,6 +44,35 @@ class CodebookEditor:
         else:
             print(f"Please open [bold yellow]{self.file_path}[/bold yellow] to edit")
             return False
+
+    def create_codebook(self, codebook_path: Optional[str] = None) -> None:
+        """Create the codebook with template content"""
+        if codebook_path is None:
+            codebook_path = self.file_path
+        if codebook_path is None:
+            return
+
+        if os.path.exists(codebook_path):
+            print(f"Codebook already exists: {codebook_path}")
+            return
+
+        # Get template file path
+        template_path = self.book_tpl_path
+        if not os.path.exists(template_path):
+            print(f"[{self.name}] Template file not found: {template_path}")
+            return
+
+        # Create directory if not exists
+        os.makedirs(os.path.dirname(codebook_path), exist_ok=True)
+
+        # Copy template content to input file
+        with open(template_path, "r") as template_file:
+            template_content = template_file.read()
+
+        with open(codebook_path, "w") as f:
+            f.write(template_content)
+
+        print(f"[{self.name}] Created codebook at {codebook_path} using template")
 
     def _open_in_cursor(self) -> bool:
         """Open file in Cursor editor"""
