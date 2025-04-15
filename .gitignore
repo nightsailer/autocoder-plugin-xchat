@@ -178,3 +178,6 @@ cython_debug/
 /actions/
 /output.txt
 /vendors/
+.auto-coder/
+/actions/
+/output.txt

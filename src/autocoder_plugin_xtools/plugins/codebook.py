@@ -10,12 +10,10 @@ from rich.panel import Panel
 from autocoder.plugins import Plugin, PluginManager
 from autocoder.auto_coder_runner import (
     configure,
-    mcp,
     manage_models,
-    gen_and_exec_shell_command,
 )
 from autocoder.events.event_manager_singleton import gengerate_event_file_path
-from autocoder_plugin_xtools.xchat import XTools
+from autocoder_plugin_xtools.xtools.xchat import XTools
 
 
 class XtoolsPlugin(Plugin):

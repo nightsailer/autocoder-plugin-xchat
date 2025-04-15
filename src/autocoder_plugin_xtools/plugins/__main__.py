@@ -4,9 +4,7 @@ Main entry point for the input file plugin
 
 import os
 import sys
-from pathlib import Path
-from autocoder_plugin_xtools.plugins.input_file import InputFilePlugin
-from autocoder.plugins import PluginManager, register_global_plugin_dir
+from autocoder.plugins import register_global_plugin_dir
 
 
 def install_plugin():
