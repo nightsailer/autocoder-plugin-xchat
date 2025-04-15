@@ -2,17 +2,12 @@
 CodeBook plugin for managing code book functionality
 """
 
-import os
 from typing import Any, Dict, Optional, Tuple, Callable, List
 import yaml
 from rich import print
 from rich.panel import Panel
-from williamtoolbox.server.apps.annotation_router import executor
 
 from autocoder.plugins import Plugin, PluginManager
-from autocoder_plugin_xtools.codebook import (
-    CodebookParser,
-)
 from autocoder.auto_coder_runner import (
     configure,
     mcp,
@@ -20,6 +15,7 @@ from autocoder.auto_coder_runner import (
     gen_and_exec_shell_command,
 )
 from autocoder.events.event_manager_singleton import gengerate_event_file_path
+from autocoder_plugin_xtools.xchat import XTools
 
 
 class XtoolsPlugin(Plugin):
@@ -50,16 +46,6 @@ class XtoolsPlugin(Plugin):
         if not project_root:
             print(f"[{self.name}] No project root found")
             return False
-        self.supported_commands = self.manager.get_wrapped_functions()
-        self.supported_commands.update(
-            {
-                "conf": configure,
-                "auto": self.supported_commands["auto_command"],  # alias
-                "mcp": mcp,
-                "models": manage_models,
-                "add_models_by_provider": self.add_models_by_provider,
-            }
-        )
         return True
 
     def get_commands(self) -> Dict[str, Tuple[Callable, str]]:
@@ -80,6 +66,8 @@ class XtoolsPlugin(Plugin):
     def start_xtools(self, args: str) -> None:
         """Start xtools"""
         print(f"[{self.name}] Starting xtools")
+        app = XTools()
+        app.run()
 
     def prepare_event_file(self, cmd: str) -> None:
         """Prepare the event file for the given command"""
