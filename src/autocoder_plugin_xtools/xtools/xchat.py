@@ -20,6 +20,11 @@ class XTools(App):
     CSS_PATH = ["xchat.tcss"]
     TITLE = "XTools"
 
+    def __init__(self):
+        super().__init__()
+        # 使用内置的 dracula 主题
+        self.theme = "dracula"
+
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         with Container(classes="header"):
