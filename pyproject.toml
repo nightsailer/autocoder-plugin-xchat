@@ -1,7 +1,7 @@
 [project]
-name = "autocoder-plugin-xtools"
+name = "autocoder-plugin-xchat"
 version = "0.1.0"
-description = "A set of practical plugins for AutoCoder, designed to improve functionality and make automation tasks more efficient and flexible"
+description = "xChat is a modern, interactive chat interface plugin for AutoCoder, featuring enhanced user experience, and powerful coding assistance capabilities."
 readme = "README.md"
 authors = [
     { name = "Pan Fan", email = "nightsailer@gmail.com" }
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-autocoder-plugin-xtools = "autocoder_plugin_xtools:main"
+autocoder-plugin-xchat = "autocoder_plugin_xchat:main"
 
 [build-system]
 requires = ["hatchling"]

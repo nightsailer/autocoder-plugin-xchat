@@ -5,7 +5,7 @@ CodeBook editor module for handling editor integration
 import os
 import subprocess
 from typing import Optional
-from autocoder_plugin_xtools.utils import (
+from autocoder_plugin_xchat.utils import (
     is_cursor_environment,
     is_vscode_environment,
     is_jetbrains_environment,

@@ -10,25 +10,33 @@ from textual.widgets import (
 from textual.containers import Container, Horizontal, Vertical, Center
 from textual.reactive import var
 from typing import List, Tuple, ClassVar
+from enum import Enum
 
 
-class XTools(App):
-    # Add key binding for ctrl+d to quit
+class RunMode(Enum):
+    """Run mode for XChat application"""
+
+    PLUGIN = "plugin_mode"
+    STANDALONE = "standalone_mode"
+
+
+class XChatApp(App):
     BINDINGS = [
-        ("q", "quit", "退出XTools"),
+        ("q", "quit", "退出xChat"),
     ]
     CSS_PATH = ["xchat.tcss"]
-    TITLE = "XTools"
+    TITLE = "xChat"
 
-    def __init__(self):
+    def __init__(self, run_mode: RunMode = RunMode.PLUGIN):
         super().__init__()
         # 使用内置的 dracula 主题
         self.theme = "dracula"
+        self.run_mode = run_mode
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         with Container(classes="header"):
-            yield Label(f"XTools [blue] 🚀 AutoCoder[/blue]", classes="title")
+            yield Label(f"xChat  🚀 AutoCoder", classes="title")
         # button groups, action bar
         action_bar = Container(id="action-bar", classes="")
         action_bar.border_title = "Codebook"
@@ -36,13 +44,18 @@ class XTools(App):
         with action_bar:
             with Horizontal(id="action-bar-buttons"):
                 yield Button(
-                    "[red]e[/] 加载",
+                    "[purple]e[/] 加载",
                     id="new-book-button",
                     variant="primary",
                 )
                 yield Button(
-                    "[red]r[/] 运行",
+                    "[purple]r[/] 运行",
                     id="run-button",
+                    variant="primary",
+                )
+                yield Button(
+                    "[purple]c[/] 停止",
+                    id="stop-button",
                     variant="primary",
                 )
             with Container(id="book-name-container", classes="center"):
@@ -59,5 +72,5 @@ class XTools(App):
 
 
 if __name__ == "__main__":
-    app = XTools()
+    app = XChatApp()
     app.run()
