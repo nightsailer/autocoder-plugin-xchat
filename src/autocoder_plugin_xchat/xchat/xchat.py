@@ -9,8 +9,12 @@ from textual.widgets import (
 )
 from textual.containers import Container, Horizontal, Vertical, Center
 from textual.reactive import var
-from typing import List, Tuple, ClassVar
+from typing import List, Tuple, ClassVar, Optional
 from enum import Enum
+from autocoder_plugin_xchat.codebook.manager import CodebookManager
+from autocoder_plugin_xchat.codebook.executor import CodebookExecutor
+from autocoder_plugin_xchat.codebook.watcher import CodebookWatcher
+import os
 
 
 class RunMode(Enum):
@@ -32,6 +36,8 @@ class XChatApp(App):
 
     is_running: var[bool] = var(False)
     loaded: var[bool] = var(False)
+    codebook_manager: Optional[CodebookManager] = None
+    watch_worker = None
 
     def __init__(self, run_mode: RunMode = RunMode.PLUGIN):
         super().__init__()
@@ -41,6 +47,18 @@ class XChatApp(App):
         # 避免在初始化时触发更新
         self.set_reactive(XChatApp.is_running, False)
         self.set_reactive(XChatApp.loaded, False)
+        # 初始化Codebook管理器
+        self.codebook_manager = CodebookManager(
+            os.getcwd(), lambda msg: self._log_message(msg)
+        )
+
+    def _log_message(self, message: str) -> None:
+        """Log a message to the RichLog
+
+        Args:
+            message: Message to log
+        """
+        self.query_one("#log-content", RichLog).write(message)
 
     def on_mount(self) -> None:
         """Called when the app is mounted"""
@@ -98,15 +116,19 @@ class XChatApp(App):
         main_log = Container(id="main-log", classes="")
         main_log.border_title = "终端"
         with main_log:
-            yield RichLog(id="log-content")
+            yield RichLog(id="log-content", markup=True)
         yield Footer(show_command_palette=False)
 
     def action_new_book(self) -> None:
         """Handle new book button click"""
         self.query_one("#book-name", Static).update("正在加载代码本...")
-        # TODO: 实现加载代码本的逻辑
-        self.loaded = True
-        self.notify("加载代码本功能待实现", severity="warning")
+        if self.codebook_manager and self.codebook_manager.load_codebook():
+            self.loaded = True
+            self._log_message("[green]代码本加载成功[/green]")
+            self.query_one("#book-name", Static).update("代码本已加载")
+        else:
+            self._log_message("[red]代码本加载失败[/red]")
+            self.query_one("#book-name", Static).update("加载失败")
 
     def action_run_code(self) -> None:
         """Handle run button click"""
@@ -118,9 +140,12 @@ class XChatApp(App):
             return
 
         self.is_running = True
-        self.query_one("#log-content", RichLog).write("开始运行代码...")
-        # TODO: 实现运行代码的逻辑
-        self.notify("运行代码功能待实现", severity="warning")
+        self._log_message("[yellow]开始监控代码本变更...[/yellow]")
+
+        # 启动监控
+        self.watch_worker = self.run_worker(
+            self._watch_codebook, name="codebook-watcher"
+        )
 
     def action_stop_code(self) -> None:
         """Handle stop button click"""
@@ -128,10 +153,22 @@ class XChatApp(App):
             self.notify("没有正在运行的代码", severity="warning")
             return
 
+        if self.watch_worker:
+            self.watch_worker.cancel()
+            self.watch_worker = None
+
         self.is_running = False
-        self.query_one("#log-content", RichLog).write("停止运行代码")
-        # TODO: 实现停止代码运行的逻辑
-        self.notify("停止运行功能待实现", severity="warning")
+        self._log_message("[yellow]停止监控代码本变更[/yellow]")
+
+    async def _watch_codebook(self) -> None:
+        """Worker function for watching codebook"""
+        if self.codebook_manager:
+            try:
+                await self.codebook_manager.start_watching({})  # TODO: 添加命令注册表
+            except Exception as e:
+                self._log_message(f"[red]监控出错: {str(e)}[/red]")
+                self.is_running = False
+                self.watch_worker = None
 
 
 if __name__ == "__main__":

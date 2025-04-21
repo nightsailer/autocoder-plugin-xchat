@@ -3,7 +3,6 @@ Codebook package for managing code book functionality
 """
 
 from .models import (
-    Codebook,
     Metadata,
     ModelConfig,
     Settings,
@@ -16,7 +15,6 @@ from .models import (
 from .parser import CodebookParser
 
 __all__ = [
-    "Codebook",
     "Metadata",
     "ModelConfig",
     "Settings",

@@ -57,9 +57,9 @@ class CodebookEditor:
             return
 
         # Get template file path
-        template_path = self.book_tpl_path
+        template_path = book_tpl_path
         if not os.path.exists(template_path):
-            print(f"[{self.name}] Template file not found: {template_path}")
+            print(f"Template file not found: {template_path}")
             return
 
         # Create directory if not exists
@@ -72,7 +72,7 @@ class CodebookEditor:
         with open(codebook_path, "w") as f:
             f.write(template_content)
 
-        print(f"[{self.name}] Created codebook at {codebook_path} using template")
+        print(f"Created codebook at {codebook_path} using template")
 
     def _open_in_cursor(self) -> bool:
         """Open file in Cursor editor"""
